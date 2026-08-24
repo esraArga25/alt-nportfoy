@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Altın Portföy</title>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     * {
       box-sizing: border-box;
@@ -59,14 +61,17 @@
       font-size: 13px;
     }
 
+    button {
+      border: 0;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
     .login-btn {
       background: #151515;
       color: white;
-      border: 0;
       padding: 11px 20px;
       border-radius: 12px;
-      font-weight: 700;
-      cursor: pointer;
     }
 
     .status {
@@ -171,6 +176,161 @@
       font-size: 14px;
     }
 
+    .portfolio-box {
+      background: white;
+      border: 1px solid #e6dfd2;
+      border-radius: 18px;
+      padding: 22px;
+    }
+
+    .portfolio-total {
+      background: #f5ead1;
+      border: 1px solid #ead7b1;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+
+    .portfolio-total small {
+      color: #777;
+    }
+
+    .portfolio-total strong {
+      display: block;
+      font-size: 30px;
+      margin-top: 6px;
+    }
+
+    .add-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr auto;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    select,
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd5c8;
+      border-radius: 10px;
+      background: white;
+      font-size: 14px;
+    }
+
+    .add-btn {
+      background: #151515;
+      color: white;
+      padding: 0 18px;
+      border-radius: 10px;
+    }
+
+    .portfolio-item {
+      border-top: 1px solid #eee9e0;
+      padding: 14px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .portfolio-item-name {
+      font-weight: 700;
+    }
+
+    .portfolio-item-meta {
+      color: #777;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    .delete-btn {
+      background: #f4e5e2;
+      color: #a43a30;
+      padding: 8px 11px;
+      border-radius: 9px;
+    }
+
+    .account {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logout-btn {
+      background: #eeeae3;
+      padding: 10px 14px;
+      border-radius: 10px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-box {
+      width: min(420px, 100%);
+      background: white;
+      border-radius: 20px;
+      padding: 26px;
+      position: relative;
+    }
+
+    .modal-box h2 {
+      margin-top: 0;
+    }
+
+    .modal-box input {
+      margin-bottom: 10px;
+    }
+
+    .modal-btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      margin-top: 8px;
+    }
+
+    .google-btn {
+      background: #151515;
+      color: white;
+    }
+
+    .email-btn {
+      background: #c99b32;
+      color: white;
+    }
+
+    .switch-btn {
+      background: transparent;
+      color: #86651c;
+      width: 100%;
+      margin-top: 12px;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 15px;
+      right: 18px;
+      background: transparent;
+      font-size: 22px;
+    }
+
+    .auth-message {
+      font-size: 13px;
+      margin-top: 12px;
+      color: #777;
+    }
+
     .error {
       background: #fff0ee;
       border: 1px solid #ecc5c0;
@@ -185,6 +345,14 @@
       .prices {
         grid-template-columns: 1fr 1fr;
       }
+
+      .add-row {
+        grid-template-columns: 1fr;
+      }
+
+      .add-btn {
+        padding: 12px;
+      }
     }
 
     @media (max-width: 550px) {
@@ -195,6 +363,15 @@
       .prices {
         grid-template-columns: 1fr;
       }
+
+      header {
+        gap: 10px;
+      }
+
+      .account {
+        flex-direction: column;
+        align-items: flex-end;
+      }
     }
   </style>
 </head>
@@ -204,18 +381,26 @@
 <div class="container">
 
   <header>
+
     <div class="brand">
+
       <div class="logo">₺</div>
 
       <div>
         <h1>Altın Portföy</h1>
         <p>Canlı fiyatlar ve kişisel portföy takibi</p>
       </div>
+
     </div>
 
-    <button class="login-btn" onclick="login()">
-      Giriş Yap
-    </button>
+    <div id="accountArea">
+      <button
+        class="login-btn"
+        onclick="openLogin()">
+        Giriş Yap
+      </button>
+    </div>
+
   </header>
 
 
@@ -246,12 +431,20 @@
 
     <h2>Portföyüm</h2>
 
-    <div class="login-message">
-      <strong>Portföyünü görmek için giriş yap.</strong>
-      <br>
-      Google veya e-posta ile giriş yaptıktan sonra
-      elindeki altınların adet/gram miktarını kaydedebilir
-      ve toplam portföy değerini canlı takip edebilirsin.
+    <div id="portfolioContent">
+
+      <div class="login-message">
+
+        <strong>Portföyünü görmek için giriş yap.</strong>
+
+        <br>
+
+        Google veya e-posta ile giriş yaptıktan sonra
+        elindeki altınların adet/gram miktarını kaydedebilir
+        ve toplam portföy değerini canlı takip edebilirsin.
+
+      </div>
+
     </div>
 
   </section>
@@ -259,7 +452,87 @@
 </div>
 
 
+<div id="loginModal" class="modal">
+
+  <div class="modal-box">
+
+    <button
+      class="close-btn"
+      onclick="closeLogin()">
+      ×
+    </button>
+
+    <h2 id="authTitle">
+      Giriş Yap
+    </h2>
+
+    <button
+      class="modal-btn google-btn"
+      onclick="googleLogin()">
+      Google ile devam et
+    </button>
+
+    <div style="text-align:center;margin:18px 0;color:#999;">
+      veya
+    </div>
+
+    <input
+      id="email"
+      type="email"
+      placeholder="E-posta">
+
+    <input
+      id="password"
+      type="password"
+      placeholder="Şifre">
+
+    <button
+      class="modal-btn email-btn"
+      onclick="emailAuth()">
+      <span id="emailButtonText">
+        Giriş Yap
+      </span>
+    </button>
+
+    <button
+      class="switch-btn"
+      onclick="toggleAuthMode()">
+
+      <span id="switchText">
+        Hesabın yok mu? Kayıt ol
+      </span>
+
+    </button>
+
+    <div
+      id="authMessage"
+      class="auth-message">
+    </div>
+
+  </div>
+
+</div>
+
+
 <script>
+
+const SUPABASE_URL =
+  "https://xorzetsynkomertdliq.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_SHxiaKAcFIXIWGjFUmo6eQ_wXLDLNaF";
+
+const supabaseClient =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+
+let priceData = [];
+let currentUser = null;
+let authMode = "login";
+
 
 function formatTL(value) {
 
@@ -271,58 +544,696 @@ function formatTL(value) {
     return "—";
   }
 
-  return new Intl.NumberFormat("tr-TR", {
-    style: "currency",
-    currency: "TRY",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(Number(value));
+  return new Intl.NumberFormat(
+    "tr-TR",
+    {
+      style: "currency",
+      currency: "TRY",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }
+  ).format(Number(value));
+
 }
 
 
-function createCard(item) {
+function openLogin() {
 
-  const name =
-    item.name || "Altın";
+  document
+    .getElementById("loginModal")
+    .classList.add("open");
 
-  const unit =
-    item.unit || "Adet";
+}
 
-  const alis =
-    item.alis;
 
-  const satis =
-    item.satis;
+function closeLogin() {
 
-  return `
-    <div class="card">
+  document
+    .getElementById("loginModal")
+    .classList.remove("open");
 
-      <h3>${name}</h3>
+}
 
-      <div class="unit">
-        ${unit}
-      </div>
 
-      <div class="main-price">
-        ${formatTL(satis)}
-      </div>
+function toggleAuthMode() {
 
-      <div class="row">
-        <span>Alış</span>
-        <strong>
-          ${formatTL(alis)}
-        </strong>
-      </div>
+  if (authMode === "login") {
 
-      <div class="row">
-        <span>Satış</span>
-        <strong>
-          ${formatTL(satis)}
-        </strong>
-      </div>
+    authMode = "signup";
+
+    document.getElementById("authTitle")
+      .textContent = "Kayıt Ol";
+
+    document.getElementById("emailButtonText")
+      .textContent = "Kayıt Ol";
+
+    document.getElementById("switchText")
+      .textContent = "Zaten hesabın var mı? Giriş yap";
+
+  } else {
+
+    authMode = "login";
+
+    document.getElementById("authTitle")
+      .textContent = "Giriş Yap";
+
+    document.getElementById("emailButtonText")
+      .textContent = "Giriş Yap";
+
+    document.getElementById("switchText")
+      .textContent = "Hesabın yok mu? Kayıt ol";
+
+  }
+
+}
+
+
+async function googleLogin() {
+
+  const { error } =
+    await supabaseClient.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo:
+          window.location.origin
+      }
+    });
+
+  if (error) {
+
+    showAuthMessage(
+      error.message
+    );
+
+  }
+
+}
+
+
+async function emailAuth() {
+
+  const email =
+    document
+      .getElementById("email")
+      .value
+      .trim();
+
+  const password =
+    document
+      .getElementById("password")
+      .value;
+
+
+  if (!email || !password) {
+
+    showAuthMessage(
+      "E-posta ve şifre gerekli."
+    );
+
+    return;
+
+  }
+
+
+  showAuthMessage(
+    "İşlem yapılıyor..."
+  );
+
+
+  if (authMode === "signup") {
+
+    const { data, error } =
+      await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo:
+            window.location.origin
+        }
+      });
+
+
+    if (error) {
+
+      showAuthMessage(
+        error.message
+      );
+
+      return;
+
+    }
+
+
+    if (!data.session) {
+
+      showAuthMessage(
+        "Kayıt başarılı. E-posta adresini doğrulamak için gelen kutunu kontrol et."
+      );
+
+      return;
+
+    }
+
+
+  } else {
+
+    const { error } =
+      await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      });
+
+
+    if (error) {
+
+      showAuthMessage(
+        error.message
+      );
+
+      return;
+
+    }
+
+  }
+
+
+  closeLogin();
+
+}
+
+
+function showAuthMessage(message) {
+
+  document
+    .getElementById("authMessage")
+    .textContent = message;
+
+}
+
+
+supabaseClient.auth.onAuthStateChange(
+  async (event, session) => {
+
+    currentUser =
+      session?.user || null;
+
+    updateAccountUI();
+
+    if (currentUser) {
+
+      await loadPortfolio();
+
+    }
+
+  }
+);
+
+
+function updateAccountUI() {
+
+  const area =
+    document.getElementById(
+      "accountArea"
+    );
+
+
+  if (!currentUser) {
+
+    area.innerHTML = `
+      <button
+        class="login-btn"
+        onclick="openLogin()">
+        Giriş Yap
+      </button>
+    `;
+
+    return;
+
+  }
+
+
+  const email =
+    currentUser.email || "Hesabım";
+
+
+  area.innerHTML = `
+    <div class="account">
+
+      <span style="font-size:13px;color:#666;">
+        ${escapeHtml(email)}
+      </span>
+
+      <button
+        class="logout-btn"
+        onclick="logout()">
+        Çıkış
+      </button>
 
     </div>
   `;
+
+}
+
+
+async function logout() {
+
+  await supabaseClient.auth.signOut();
+
+  currentUser = null;
+
+  updateAccountUI();
+
+  renderLoggedOutPortfolio();
+
+}
+
+
+function renderLoggedOutPortfolio() {
+
+  document.getElementById(
+    "portfolioContent"
+  ).innerHTML = `
+
+    <div class="login-message">
+
+      <strong>Portföyünü görmek için giriş yap.</strong>
+
+      <br>
+
+      Google veya e-posta ile giriş yaptıktan sonra
+      elindeki altınların adet/gram miktarını kaydedebilir
+      ve toplam portföy değerini canlı takip edebilirsin.
+
+    </div>
+
+  `;
+
+}
+
+
+async function loadPortfolio() {
+
+  if (!currentUser) {
+
+    renderLoggedOutPortfolio();
+
+    return;
+
+  }
+
+
+  const { data, error } =
+    await supabaseClient
+      .from("portfolio")
+      .select("*")
+      .eq(
+        "user_id",
+        currentUser.id
+      )
+      .order(
+        "created_at",
+        {
+          ascending: true
+        }
+      );
+
+
+  if (error) {
+
+    console.error(error);
+
+    document.getElementById(
+      "portfolioContent"
+    ).innerHTML = `
+      <div class="login-message">
+        Portföy yüklenemedi:
+        ${escapeHtml(error.message)}
+      </div>
+    `;
+
+    return;
+
+  }
+
+
+  renderPortfolio(data || []);
+
+}
+
+
+function renderPortfolio(items) {
+
+  let total = 0;
+
+  const priceMap =
+    new Map();
+
+  priceData.forEach(item => {
+
+    priceMap.set(
+      item.name,
+      item
+    );
+
+  });
+
+
+  let html = `
+
+    <div class="portfolio-box">
+
+      <div class="portfolio-total">
+
+        <small>
+          Toplam Portföy Değeri
+        </small>
+
+        <strong id="portfolioTotal">
+          ₺0,00
+        </strong>
+
+      </div>
+
+
+      <div class="add-row">
+
+        <select id="portfolioProduct">
+
+          ${priceData.map(item => `
+
+            <option value="${escapeHtml(item.name)}">
+              ${escapeHtml(item.name)}
+            </option>
+
+          `).join("")}
+
+        </select>
+
+
+        <input
+          id="portfolioQuantity"
+          type="number"
+          min="0"
+          step="0.001"
+          placeholder="Miktar">
+
+
+        <button
+          class="add-btn"
+          onclick="addPortfolioItem()">
+          + Ekle
+        </button>
+
+      </div>
+
+      <div id="portfolioItems">
+
+  `;
+
+
+  if (!items.length) {
+
+    html += `
+      <div style="color:#777;font-size:14px;">
+        Henüz portföyüne altın eklemedin.
+      </div>
+    `;
+
+  }
+
+
+  items.forEach(item => {
+
+    const price =
+      priceMap.get(
+        item.product_name
+      );
+
+
+    let value = 0;
+
+
+    if (price) {
+
+      value =
+        Number(item.quantity) *
+        Number(price.satis);
+
+      total += value;
+
+    }
+
+
+    html += `
+
+      <div class="portfolio-item">
+
+        <div>
+
+          <div class="portfolio-item-name">
+            ${escapeHtml(item.product_name)}
+          </div>
+
+          <div class="portfolio-item-meta">
+
+            ${Number(item.quantity).toLocaleString("tr-TR")}
+            ${escapeHtml(item.unit)}
+
+            ·
+
+            ${formatTL(value)}
+
+          </div>
+
+        </div>
+
+
+        <button
+          class="delete-btn"
+          onclick="deletePortfolioItem(${item.id})">
+          Sil
+        </button>
+
+      </div>
+
+    `;
+
+  });
+
+
+  html += `
+
+      </div>
+
+    </div>
+
+  `;
+
+
+  document.getElementById(
+    "portfolioContent"
+  ).innerHTML = html;
+
+
+  document.getElementById(
+    "portfolioTotal"
+  ).textContent =
+    formatTL(total);
+
+}
+
+
+async function addPortfolioItem() {
+
+  if (!currentUser) {
+
+    openLogin();
+
+    return;
+
+  }
+
+
+  const product =
+    document.getElementById(
+      "portfolioProduct"
+    ).value;
+
+
+  const quantity =
+    Number(
+      document.getElementById(
+        "portfolioQuantity"
+      ).value
+    );
+
+
+  if (
+    !product ||
+    !quantity ||
+    quantity <= 0
+  ) {
+
+    alert(
+      "Geçerli bir miktar gir."
+    );
+
+    return;
+
+  }
+
+
+  const price =
+    priceData.find(
+      item =>
+        item.name === product
+    );
+
+
+  if (!price) {
+
+    alert(
+      "Bu ürünün fiyatı bulunamadı."
+    );
+
+    return;
+
+  }
+
+
+  const { error } =
+    await supabaseClient
+      .from("portfolio")
+      .insert({
+        user_id:
+          currentUser.id,
+
+        product_name:
+          price.name,
+
+        unit:
+          price.unit,
+
+        quantity:
+          quantity
+      });
+
+
+  if (error) {
+
+    alert(
+      "Kaydedilemedi: " +
+      error.message
+    );
+
+    return;
+
+  }
+
+
+  document.getElementById(
+    "portfolioQuantity"
+  ).value = "";
+
+
+  await loadPortfolio();
+
+}
+
+
+async function deletePortfolioItem(id) {
+
+  if (!confirm(
+    "Bu ürünü portföyünden silmek istediğine emin misin?"
+  )) {
+
+    return;
+
+  }
+
+
+  const { error } =
+    await supabaseClient
+      .from("portfolio")
+      .delete()
+      .eq("id", id)
+      .eq(
+        "user_id",
+        currentUser.id
+      );
+
+
+  if (error) {
+
+    alert(
+      "Silinemedi: " +
+      error.message
+    );
+
+    return;
+
+  }
+
+
+  await loadPortfolio();
+
+}
+
+
+function escapeHtml(value) {
+
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+}
+
+
+function createPriceCard(item) {
+
+  return `
+
+    <div class="card">
+
+      <h3>
+        ${escapeHtml(item.name)}
+      </h3>
+
+      <div class="unit">
+        ${escapeHtml(item.unit || "Adet")}
+      </div>
+
+      <div class="main-price">
+        ${formatTL(item.satis)}
+      </div>
+
+      <div class="row">
+
+        <span>Alış</span>
+
+        <strong>
+          ${formatTL(item.alis)}
+        </strong>
+
+      </div>
+
+      <div class="row">
+
+        <span>Satış</span>
+
+        <strong>
+          ${formatTL(item.satis)}
+        </strong>
+
+      </div>
+
+    </div>
+
+  `;
+
 }
 
 
@@ -334,45 +1245,47 @@ async function loadPrices() {
   const status =
     document.getElementById("status");
 
+
   try {
 
     errorBox.style.display = "none";
 
+
     const response =
       await fetch(
-        "/api/prices?t=" + Date.now(),
+        "/api/prices?t=" +
+        Date.now(),
         {
           cache: "no-store"
         }
       );
 
+
     const result =
       await response.json();
 
+
     if (!response.ok) {
+
       throw new Error(
         result.error ||
         "Fiyatlar alınamadı."
       );
+
     }
 
 
-    /*
-     * BURASI ÖNEMLİ:
-     *
-     * Artık ürün kodu aramıyoruz.
-     * API ne gönderirse doğrudan gösteriyoruz.
-     */
-
-    const data =
+    priceData =
       Array.isArray(result.data)
         ? result.data
         : [];
 
 
-    document.getElementById("prices").innerHTML =
-      data
-        .map(item => createCard(item))
+    document.getElementById(
+      "prices"
+    ).innerHTML =
+      priceData
+        .map(createPriceCard)
         .join("");
 
 
@@ -382,7 +1295,9 @@ async function loadPrices() {
         : new Date();
 
 
-    document.getElementById("updated").textContent =
+    document.getElementById(
+      "updated"
+    ).textContent =
       "Son güncelleme: " +
       date.toLocaleTimeString(
         "tr-TR",
@@ -394,8 +1309,18 @@ async function loadPrices() {
       );
 
 
-    status.textContent = "CANLI";
-    status.className = "live";
+    status.textContent =
+      "CANLI";
+
+    status.className =
+      "live";
+
+
+    if (currentUser) {
+
+      await loadPortfolio();
+
+    }
 
 
   } catch (error) {
@@ -408,23 +1333,47 @@ async function loadPrices() {
     status.className =
       "live offline";
 
+
     errorBox.textContent =
       "Fiyatlar alınamadı: " +
       error.message;
 
-    errorBox.style.display = "block";
+    errorBox.style.display =
+      "block";
+
   }
+
 }
 
 
-function login() {
-  alert(
-    "Google / e-posta giriş sistemi sonraki adımda bağlanacak."
-  );
+async function initializeAuth() {
+
+  const {
+    data
+  } =
+    await supabaseClient.auth.getSession();
+
+
+  currentUser =
+    data.session?.user || null;
+
+
+  updateAccountUI();
+
+
+  if (currentUser) {
+
+    await loadPortfolio();
+
+  }
+
 }
 
+
+initializeAuth();
 
 loadPrices();
+
 
 setInterval(
   loadPrices,
