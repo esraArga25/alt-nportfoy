@@ -17,89 +17,145 @@ export default async function handler(req, res) {
     const html = await response.text();
 
     /*
-     * Sadece KUYUMCU tablosunu alıyoruz.
+     * Sayfadaki bütün tablo satırlarını alıyoruz.
      */
-    const startMarker = "KUYUMCU KUYUMCU";
-    const endMarker = "KUYUMCU SERBEST PİYASA";
-
-    const start = html.indexOf(startMarker);
-    const end = html.indexOf(endMarker);
-
-    if (start === -1) {
-      throw new Error("Kuyumcu tablosu bulunamadı.");
-    }
-
-    const section =
-      end > start
-        ? html.substring(start, end)
-        : html.substring(start);
-
-    /*
-     * HTML'i okunabilir metne çeviriyoruz.
-     */
-    const text = section
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " ")
-      .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<\/tr>/gi, "\n")
-      .replace(/<\/td>/gi, " | ")
-      .replace(/<\/th>/gi, " | ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/&nbsp;/gi, " ")
-      .replace(/&amp;/gi, "&")
-      .replace(/\r/g, "")
-      .replace(/[ \t]+/g, " ");
-
-    const lines = text
-      .split("\n")
-      .map(x => x.trim())
-      .filter(Boolean);
+    const rows =
+      html.match(/<tr\b[\s\S]*?<\/tr>/gi) || [];
 
     const data = [];
 
-    for (const line of lines) {
+    for (const row of rows) {
 
       /*
-       * Örnek:
-       *
-       * GRAM ALTIN | 15:40:34 | 6584.90 | 6649.83 -1.34%
+       * Hücreleri al.
        */
+      const cells =
+        row.match(/<t[dh]\b[\s\S]*?<\/t[dh]>/gi) || [];
 
-      const match = line.match(
-        /^(.+?)\s*\|\s*(\d{1,2}:\d{2}:\d{2})\s*\|\s*([0-9.,]+)\s*\|\s*([0-9.,]+)/
-      );
-
-      if (!match) {
+      if (cells.length < 3) {
         continue;
       }
 
-      const name = match[1]
-        .replace(/\|/g, "")
-        .trim();
+      /*
+       * Hücre içindeki HTML'i temizle.
+       */
+      function clean(htmlText) {
+        return htmlText
+          .replace(/<script[\s\S]*?<\/script>/gi, "")
+          .replace(/<style[\s\S]*?<\/style>/gi, "")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/&nbsp;/gi, " ")
+          .replace(/&amp;/gi, "&")
+          .replace(/&#39;/gi, "'")
+          .replace(/&quot;/gi, '"')
+          .replace(/\s+/g, " ")
+          .trim();
+      }
 
-      const time = match[2];
+      const values = cells.map(clean);
 
-      const alis = parseSourceNumber(match[3]);
-      const satis = parseSourceNumber(match[4]);
+      /*
+       * Gerçek kaynak yapısı:
+       *
+       * [ "GRAM ALTIN 03:21:52", "7032.88", "7119.19 -0.36%" ]
+       *
+       * veya bazı sayfalarda:
+       *
+       * [ "GRAM ALTIN 03:21:52", "7032.88", "7119.19", "-0.36%" ]
+       */
+
+      const firstCell = values[0];
+
+      /*
+       * Ürün + saat ayrıştır.
+       */
+      const nameMatch =
+        firstCell.match(
+          /^(.+?)\s+\d{1,2}:\d{2}:\d{2}$/
+        );
+
+      if (!nameMatch) {
+        continue;
+      }
+
+      const name =
+        nameMatch[1].trim();
+
+      /*
+       * Başlık satırlarını ve diğer tabloları ele.
+       */
+      if (
+        name === "KUYUMCU KUYUMCU" ||
+        name === "ALIŞ" ||
+        name === "SATIŞ" ||
+        name.includes("SERBEST PİYASA")
+      ) {
+        continue;
+      }
+
+      /*
+       * Alış fiyatı ikinci hücre.
+       */
+      const alis =
+        parsePrice(values[1]);
+
+      /*
+       * Satış fiyatı üçüncü hücre.
+       * Eğer yüzde de aynı hücredeyse parsePrice
+       * sadece ilk fiyatı alacak.
+       */
+      const satis =
+        parsePrice(values[2]);
 
       if (
-        !name ||
         alis === null ||
         satis === null
       ) {
         continue;
       }
 
+      /*
+       * Sadece Kuyumcu tablosundaki ürünleri almak için
+       * bilinen ürünleri kontrol ediyoruz.
+       *
+       * Burada isimleri değiştirmiyoruz.
+       * Kaynaktaki isim aynen kullanılıyor.
+       */
+      const allowed = [
+        "GRAM ALTIN",
+        "Has Altın",
+        "14-AYAR gr",
+        "22-AYAR gr",
+        "Kuyumcu Çeyrek Altın",
+        "Yarım Altın",
+        "Tam Altın",
+        "Ata Altın",
+        "Beşli Ata",
+        "Çeyrek (Eski)",
+        "Yarım (Eski)",
+        "Tam (Eski)",
+        "ALTIN ONS"
+      ];
+
+      if (!allowed.includes(name)) {
+        continue;
+      }
+
+      /*
+       * Birim.
+       */
       let unit = "Adet";
 
       if (
-        /GRAM/i.test(name) ||
-        /\bgr\b/i.test(name)
+        name === "GRAM ALTIN" ||
+        name === "Has Altın" ||
+        name === "14-AYAR gr" ||
+        name === "22-AYAR gr"
       ) {
         unit = "Gram";
       }
 
-      if (/ONS/i.test(name)) {
+      if (name === "ALTIN ONS") {
         unit = "Ons";
       }
 
@@ -109,23 +165,47 @@ export default async function handler(req, res) {
         unit: unit,
         alis: alis,
         satis: satis,
-        kaynak_saati: time
+        tarih: new Date().toISOString()
       });
     }
 
-    if (!data.length) {
+    /*
+     * Aynı ürünü iki kere alma.
+     */
+    const uniqueData = [];
+
+    const seen = new Set();
+
+    for (const item of data) {
+      if (seen.has(item.name)) {
+        continue;
+      }
+
+      seen.add(item.name);
+      uniqueData.push(item);
+    }
+
+    if (!uniqueData.length) {
       throw new Error(
-        "Kuyumcu ürünleri okunamadı."
+        "Kuyumcu ürünleri bulunamadı."
       );
     }
+
+    res.setHeader(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate"
+    );
 
     return res.status(200).json({
       source: "Canlı Altın - Kuyumcu",
       updated_at: new Date().toISOString(),
-      data
+      data: uniqueData
     });
 
   } catch (error) {
+
+    console.error(error);
+
     return res.status(502).json({
       error: "Fiyat kaynağı okunamadı.",
       details: error.message
@@ -135,52 +215,73 @@ export default async function handler(req, res) {
 
 
 /*
- * Kaynaktan gelen sayı:
+ * Kaynaktan gelen fiyatı doğru sayıya çevirir.
  *
- * 6584.90  -> 6584.90
- * 6649.83  -> 6649.83
- * 10720    -> 10720
+ * 7032.88  -> 7032.88
+ * 7119.19  -> 7119.19
+ * 11484    -> 11484
  * 6.584,90 -> 6584.90
- *
- * Noktalı ondalık değeri ASLA
- * 658490 yapmıyoruz.
  */
-function parseSourceNumber(value) {
+function parsePrice(value) {
+
   if (!value) {
     return null;
   }
 
-  let text = String(value).trim();
+  let text =
+    String(value)
+      .trim()
+      .replace(/\s/g, "");
 
   /*
-   * Türkçe format:
+   * İlk fiyatı al.
+   *
+   * Örneğin:
+   * "7119.19-0.36%"
+   *
+   * sadece:
+   * "7119.19"
+   */
+  const match =
+    text.match(
+      /-?\d+(?:[.,]\d+)?/
+    );
+
+  if (!match) {
+    return null;
+  }
+
+  text = match[0];
+
+  /*
+   * Türkçe:
    * 6.584,90
    */
   if (
     text.includes(".") &&
     text.includes(",")
   ) {
-    text = text
-      .replace(/\./g, "")
-      .replace(",", ".");
+    text =
+      text
+        .replace(/\./g, "")
+        .replace(",", ".");
   }
 
   /*
-   * Sadece virgül:
    * 6584,90
    */
   else if (text.includes(",")) {
-    text = text.replace(",", ".");
+    text =
+      text.replace(",", ".");
   }
 
   /*
-   * Sadece nokta:
    * 6584.90
-   *
-   * DOKUNMUYORUZ.
+   * Burada noktaya DOKUNMUYORUZ.
    */
 
-  const number = Number(text);
+  const number =
+    Number(text);
 
   return Number.isFinite(number)
     ? number
