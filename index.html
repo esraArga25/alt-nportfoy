@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Altın Piyasası</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f7f5f0;color:#222;font-family:Inter,Arial,sans-serif}
+.wrap{max-width:1180px;margin:auto;padding:28px 20px 60px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:34px}
+.brand{display:flex;align-items:center;gap:12px}.logo{width:42px;height:42px;border-radius:13px;background:#c89b3c;color:#fff;display:grid;place-items:center;font-size:21px;font-weight:800}
+h1{font-size:25px;margin:0}.sub{font-size:13px;color:#888;margin-top:4px}
+.login{background:#222;color:#fff;border:0;border-radius:11px;padding:11px 18px;font-size:14px;font-weight:650;cursor:pointer}
+.hero{background:#fff;border:1px solid #e7e1d6;border-radius:22px;padding:25px;margin-bottom:25px}
+.heroTop{display:flex;justify-content:space-between;align-items:center}.hero h2{margin:0;font-size:18px}
+.live{display:flex;align-items:center;gap:7px;color:#23854c;font-size:13px;font-weight:650}.dot{width:8px;height:8px;border-radius:50%;background:#2ca05a}
+.updated{color:#999;font-size:12px;margin-top:8px}.error{color:#a05b27}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.card{background:#fff;border:1px solid #e7e1d6;border-radius:18px;padding:20px}
+.name{font-weight:700}.unit{font-size:12px;color:#999;margin-top:5px}.price{font-size:25px;font-weight:800;margin:17px 0 13px}
+.row{display:flex;justify-content:space-between;border-top:1px solid #eee;padding-top:9px;margin-top:8px;font-size:13px}.row span{color:#888}
+.section{margin-top:32px}.section h2{font-size:18px}.hint{background:#f1eadc;border:1px solid #e6d8bc;border-radius:16px;padding:18px;color:#5f5138;font-size:14px}
+footer{margin-top:28px;font-size:12px;color:#999}
+@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.grid{grid-template-columns:1fr}.heroTop{align-items:flex-start;flex-direction:column;gap:12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<div class="brand"><div class="logo">₺</div><div><h1>Altın Piyasası</h1><div class="sub">Güncel altın fiyatları</div></div></div>
+<button class="login" onclick="login()">Giriş Yap</button>
+</header>
+
+<section class="hero">
+<div class="heroTop">
+<div><h2>Canlı Altın Fiyatları</h2><div id="updated" class="updated">Fiyatlar yükleniyor…</div></div>
+<div class="live"><span class="dot"></span><span id="status">BAĞLANIYOR</span></div>
+</div>
+</section>
+
+<main id="prices" class="grid"></main>
+
+<section class="section">
+<h2>Portföyüm</h2>
+<div class="hint"><b>Portföyünü görmek için giriş yap.</b><br>
+Google veya e-posta ile hesabına giriş yaptıktan sonra elindeki altınların adet/gram miktarını kaydedebilir ve toplam portföy değerini canlı takip edebilirsin.</div>
+</section>
+<footer>Fiyatlar bilgi amaçlıdır; alış/satış fiyatları kaynağa ve kuyumcuya göre farklılık gösterebilir.</footer>
+</div>
+
+<script>
+const products=[
+['ALTIN','24 Ayar Gram Altın','Gram'],
+['22AYAR','22 Ayar Altın','Gram'],
+['CEYREK_YENI','Çeyrek Altın','Adet'],
+['YARIM_YENI','Yarım Altın','Adet'],
+['TAM_YENI','Tam Altın','Adet'],
+['ATA_YENI','Ata Altın','Adet'],
+['CUMHURIYET','Cumhuriyet Altını','Adet'],
+['BILEZIK','22 Ayar Bilezik','Gram'],
+['GREMSE_YENI','Gremse Altın','Adet']
+];
+
+const money=v=>Number.isFinite(v)?new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v)+' ₺':'—';
+const n=v=>parseFloat(String(v??'').replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''));
+
+function render(data){
+ const map=Object.fromEntries(data.map(x=>[x.code,x]));
+ document.getElementById('prices').innerHTML=products.map(([code,name,unit])=>{
+   const x=map[code]||{};
+   return `<article class="card">
+   <div class="name">${name}</div><div class="unit">${unit}</div>
+   <div class="price">${money(n(x.satis))}</div>
+   <div class="row"><span>Alış</span><b>${money(n(x.alis))}</b></div>
+   <div class="row"><span>Satış</span><b>${money(n(x.satis))}</b></div>
+   </article>`;
+ }).join('');
+ const t=data.find(x=>x.tarih)?.tarih;
+ document.getElementById('updated').textContent=t?'Son veri: '+t:'Son güncelleme: '+new Date().toLocaleTimeString('tr-TR');
+ document.getElementById('status').textContent='CANLI';
+ document.getElementById('status').classList.remove('error');
+}
+
+async function load(){
+ try{
+   const r=await fetch('/api/prices',{cache:'no-store'});
+   if(!r.ok) throw new Error('Sunucu fiyat verisi alamadı');
+   const data=await r.json();
+   if(!Array.isArray(data)) throw new Error('Beklenmeyen veri formatı');
+   render(data);
+ }catch(e){
+   document.getElementById('status').textContent='VERİ BEKLENİYOR';
+   document.getElementById('status').classList.add('error');
+   document.getElementById('updated').textContent='Fiyat servisine bağlanılamadı. Yeniden deneniyor…';
+   document.getElementById('updated').classList.add('error');
+ }
+}
+function login(){alert('Google veya e-posta girişini bir sonraki aşamada Supabase ile bağlayacağız.')}
+load(); setInterval(load,10000);
+</script>
+</body></html>
