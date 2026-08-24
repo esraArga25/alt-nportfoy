@@ -1,13 +1,18 @@
-# Altın Piyasası
+# Altın Portföy v2
 
-Vercel'e deploy edilmeye hazır basit sürüm.
+Vercel üzerinde doğrudan deploy edilebilir statik web uygulaması + serverless fiyat API'si.
 
-- Ana sayfada canlı altın fiyatları
-- `/api/prices` sunucu tarafı proxy ile Kapalıçarşı API
-- Tarayıcı CORS problemi yok
-- 10 saniyede bir güncelleme
-- Sağ üstte Giriş Yap
-- Portföy + Google/e-posta authentication sonraki aşamada Supabase ile bağlanabilir
+## Özellikler
+- Canlı altın fiyatlarını `/api/prices` üzerinden çeker.
+- Birincil kaynak: Turkpidya public gold endpoint (Harem Altın verisi).
+- Kapalıçarşı endpoint'i fallback olarak denenir.
+- 30 saniyede bir fiyat yenileme.
+- Kurulum gerektirmeyen cihaz-içi kullanıcı girişi.
+- Kullanıcı bazlı portföy; miktar, maliyet, güncel değer ve kâr/zarar takibi.
+- Kullanıcı ve portföy verileri yalnızca tarayıcı `localStorage` içinde tutulur.
 
-Kaynak API: https://kapalicarsi.apiluna.org/
-Kaynağın dokümantasyonu: https://github.com/rslcskn/Kapali-Carsi-Altin-API
+## Vercel
+Repo kökünde `index.html` ve `api/prices.js` olacak şekilde GitHub'a yükleyin. Vercel projeyi otomatik deploy eder.
+
+## Not
+Bu sürümde giriş gerçek bir kimlik doğrulama servisi değildir. Gerçek Google/e-posta login ve farklı cihazlarda ortak portföy için Supabase/Firebase gibi bir backend bağlanmalıdır.

@@ -2,99 +2,77 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Altın Piyasası</title>
+<title>Altın Portföy</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#f7f5f0;color:#222;font-family:Inter,Arial,sans-serif}
-.wrap{max-width:1180px;margin:auto;padding:28px 20px 60px}
-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:34px}
-.brand{display:flex;align-items:center;gap:12px}.logo{width:42px;height:42px;border-radius:13px;background:#c89b3c;color:#fff;display:grid;place-items:center;font-size:21px;font-weight:800}
-h1{font-size:25px;margin:0}.sub{font-size:13px;color:#888;margin-top:4px}
-.login{background:#222;color:#fff;border:0;border-radius:11px;padding:11px 18px;font-size:14px;font-weight:650;cursor:pointer}
-.hero{background:#fff;border:1px solid #e7e1d6;border-radius:22px;padding:25px;margin-bottom:25px}
-.heroTop{display:flex;justify-content:space-between;align-items:center}.hero h2{margin:0;font-size:18px}
-.live{display:flex;align-items:center;gap:7px;color:#23854c;font-size:13px;font-weight:650}.dot{width:8px;height:8px;border-radius:50%;background:#2ca05a}
-.updated{color:#999;font-size:12px;margin-top:8px}.error{color:#a05b27}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.card{background:#fff;border:1px solid #e7e1d6;border-radius:18px;padding:20px}
-.name{font-weight:700}.unit{font-size:12px;color:#999;margin-top:5px}.price{font-size:25px;font-weight:800;margin:17px 0 13px}
-.row{display:flex;justify-content:space-between;border-top:1px solid #eee;padding-top:9px;margin-top:8px;font-size:13px}.row span{color:#888}
-.section{margin-top:32px}.section h2{font-size:18px}.hint{background:#f1eadc;border:1px solid #e6d8bc;border-radius:16px;padding:18px;color:#5f5138;font-size:14px}
-footer{margin-top:28px;font-size:12px;color:#999}
-@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.grid{grid-template-columns:1fr}.heroTop{align-items:flex-start;flex-direction:column;gap:12px}}
+:root{--bg:#f7f5f0;--card:#fff;--text:#222;--muted:#8b8b8b;--gold:#c89b3c;--border:#e7e1d6;--green:#23854c;--red:#b64646;--soft:#f1eadc}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}.wrap{max-width:1180px;margin:auto;padding:28px 20px 60px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:34px}.brand{display:flex;align-items:center;gap:12px}.logo{width:42px;height:42px;border-radius:13px;background:var(--gold);color:#fff;display:grid;place-items:center;font-size:21px;font-weight:800}h1{font-size:25px;margin:0}.sub{font-size:13px;color:#888;margin-top:4px}.actions{display:flex;gap:8px;align-items:center}.btn{border:0;border-radius:11px;padding:11px 16px;font-size:14px;font-weight:700;cursor:pointer}.btn-dark{background:#222;color:#fff}.btn-gold{background:var(--gold);color:white}.btn-light{background:white;border:1px solid var(--border)}.btn-danger{background:#fff1f1;color:var(--red);border:1px solid #f0cccc}.hero{background:#fff;border:1px solid var(--border);border-radius:22px;padding:25px;margin-bottom:25px}.heroTop{display:flex;justify-content:space-between;align-items:center}.hero h2{margin:0;font-size:18px}.live{display:flex;align-items:center;gap:7px;color:var(--green);font-size:13px;font-weight:700}.dot{width:8px;height:8px;border-radius:50%;background:#2ca05a}.updated{color:#999;font-size:12px;margin-top:8px}.error{color:#a05b27!important}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.card{background:#fff;border:1px solid var(--border);border-radius:18px;padding:20px}.name{font-weight:700}.unit{font-size:12px;color:#999;margin-top:5px}.price{font-size:25px;font-weight:800;margin:17px 0 13px}.row{display:flex;justify-content:space-between;border-top:1px solid #eee;padding-top:9px;margin-top:8px;font-size:13px}.row span{color:#888}.section{margin-top:32px}.section h2{font-size:18px}.hint{background:var(--soft);border:1px solid #e6d8bc;border-radius:16px;padding:18px;color:#5f5138;font-size:14px}.hidden{display:none!important}.portfolio-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}.metric{background:#fff;border:1px solid var(--border);border-radius:16px;padding:18px}.metric small{display:block;color:#888;margin-bottom:8px}.metric strong{font-size:22px}.positive{color:var(--green)}.negative{color:var(--red)}
+.tableWrap{overflow:auto;background:#fff;border:1px solid var(--border);border-radius:16px}table{width:100%;border-collapse:collapse;min-width:760px}th,td{text-align:left;padding:14px;border-bottom:1px solid #eee;font-size:13px}th{color:#777;background:#faf9f6}.empty{text-align:center;padding:28px;color:#999}.portfolioHead{display:flex;justify-content:space-between;align-items:center;gap:12px}.userChip{font-size:13px;color:#666;background:white;border:1px solid var(--border);padding:8px 11px;border-radius:999px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.38);display:grid;place-items:center;padding:20px;z-index:10}.modalCard{width:min(430px,100%);background:white;border-radius:20px;padding:24px;box-shadow:0 20px 70px rgba(0,0,0,.22)}.modalCard h3{margin:0 0 8px}.modalCard p{color:#777;font-size:13px;line-height:1.5}.field{margin-top:14px}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:6px}.field input,.field select{width:100%;padding:12px;border:1px solid #ddd5c7;border-radius:10px;font:inherit}.modalActions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.notice{font-size:12px;color:#8d7041;background:#fff7e6;border:1px solid #f0dfb7;padding:10px;border-radius:10px;margin-top:12px}footer{margin-top:28px;font-size:12px;color:#999}
+@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}.portfolio-summary{grid-template-columns:1fr}}@media(max-width:560px){.grid{grid-template-columns:1fr}.heroTop{align-items:flex-start;flex-direction:column;gap:12px}header{align-items:flex-start}.actions{flex-direction:column;align-items:flex-end}.portfolioHead{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
-<div class="brand"><div class="logo">₺</div><div><h1>Altın Piyasası</h1><div class="sub">Güncel altın fiyatları</div></div></div>
-<button class="login" onclick="login()">Giriş Yap</button>
+<div class="brand"><div class="logo">₺</div><div><h1>Altın Portföy</h1><div class="sub">Canlı fiyatlar ve kişisel portföy takibi</div></div></div>
+<div class="actions"><span id="userChip" class="userChip hidden"></span><button id="loginBtn" class="btn btn-dark" onclick="openLogin()">Giriş Yap</button><button id="logoutBtn" class="btn btn-light hidden" onclick="logout()">Çıkış</button></div>
 </header>
 
-<section class="hero">
-<div class="heroTop">
-<div><h2>Canlı Altın Fiyatları</h2><div id="updated" class="updated">Fiyatlar yükleniyor…</div></div>
-<div class="live"><span class="dot"></span><span id="status">BAĞLANIYOR</span></div>
-</div>
-</section>
-
+<section class="hero"><div class="heroTop"><div><h2>Canlı Altın Fiyatları</h2><div id="updated" class="updated">Fiyatlar yükleniyor…</div></div><div class="live"><span class="dot"></span><span id="status">BAĞLANIYOR</span></div></div></section>
 <main id="prices" class="grid"></main>
 
 <section class="section">
-<h2>Portföyüm</h2>
-<div class="hint"><b>Portföyünü görmek için giriş yap.</b><br>
-Google veya e-posta ile hesabına giriş yaptıktan sonra elindeki altınların adet/gram miktarını kaydedebilir ve toplam portföy değerini canlı takip edebilirsin.</div>
-</section>
-<footer>Fiyatlar bilgi amaçlıdır; alış/satış fiyatları kaynağa ve kuyumcuya göre farklılık gösterebilir.</footer>
+<div class="portfolioHead"><h2>Portföyüm</h2><button id="addAssetBtn" class="btn btn-gold hidden" onclick="openAsset()">+ Altın Ekle</button></div>
+<div id="loginHint" class="hint"><b>Portföyünü görmek için giriş yap.</b><br>Bu sürümde giriş ve portföy bilgileri yalnızca bu tarayıcıda saklanır. Sunucuya gönderilmez.</div>
+<div id="portfolioArea" class="hidden">
+<div class="portfolio-summary">
+<div class="metric"><small>Güncel Portföy Değeri</small><strong id="portfolioValue">—</strong></div>
+<div class="metric"><small>Toplam Maliyet</small><strong id="portfolioCost">—</strong></div>
+<div class="metric"><small>Kâr / Zarar</small><strong id="portfolioPnl">—</strong></div>
 </div>
+<div class="tableWrap"><table><thead><tr><th>Altın</th><th>Miktar</th><th>Güncel Alış</th><th>Güncel Değer</th><th>Maliyet</th><th>Kâr/Zarar</th><th></th></tr></thead><tbody id="portfolioRows"></tbody></table><div id="emptyPortfolio" class="empty hidden">Henüz portföy kaydı eklemedin.</div></div>
+</div>
+</section>
+<footer>Fiyatlar bilgi amaçlıdır; alış/satış fiyatları kaynağa göre farklılık gösterebilir. Portföy değerinde güncel “alış” fiyatı kullanılır.</footer>
+</div>
+
+<div id="loginModal" class="modal hidden"><div class="modalCard"><h3>Giriş Yap</h3><p>Portföyünü bu cihazda sana özel saklamak için e-posta adresini kullan.</p><div class="field"><label>Ad</label><input id="loginName" placeholder="Adın"></div><div class="field"><label>E-posta</label><input id="loginEmail" type="email" placeholder="ornek@email.com"></div><div class="notice">Bu, kurulum gerektirmeyen yerel giriş sürümüdür. Gerçek Google/e-posta kimlik doğrulaması için daha sonra Supabase bağlanabilir.</div><div class="modalActions"><button class="btn btn-light" onclick="closeLogin()">Vazgeç</button><button class="btn btn-dark" onclick="login()">Devam Et</button></div></div></div>
+
+<div id="assetModal" class="modal hidden"><div class="modalCard"><h3>Portföye Altın Ekle</h3><div class="field"><label>Altın Türü</label><select id="assetCode"></select></div><div class="field"><label>Miktar (gram/adet)</label><input id="assetQty" type="number" min="0" step="0.01" placeholder="Örn. 5"></div><div class="field"><label>Toplam Alış Maliyeti (₺)</label><input id="assetCost" type="number" min="0" step="0.01" placeholder="Örn. 35000"></div><div class="modalActions"><button class="btn btn-light" onclick="closeAsset()">Vazgeç</button><button class="btn btn-gold" onclick="saveAsset()">Kaydet</button></div></div></div>
 
 <script>
 const products=[
-['ALTIN','24 Ayar Gram Altın','Gram'],
-['22AYAR','22 Ayar Altın','Gram'],
-['CEYREK_YENI','Çeyrek Altın','Adet'],
-['YARIM_YENI','Yarım Altın','Adet'],
-['TAM_YENI','Tam Altın','Adet'],
-['ATA_YENI','Ata Altın','Adet'],
-['CUMHURIYET','Cumhuriyet Altını','Adet'],
-['BILEZIK','22 Ayar Bilezik','Gram'],
-['GREMSE_YENI','Gremse Altın','Adet']
+['ALTIN','24 Ayar Gram Altın','Gram'],['22AYAR','22 Ayar Altın','Gram'],['CEYREK_YENI','Çeyrek Altın','Adet'],['YARIM_YENI','Yarım Altın','Adet'],['TAM_YENI','Tam Altın','Adet'],['ATA_YENI','Ata Altın','Adet'],['CUMHURIYET','Cumhuriyet Altını','Adet'],['BILEZIK','22 Ayar Bilezik','Gram']
 ];
+let priceMap={}; let currentUser=null;
+const money=v=>Number.isFinite(v)?new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY',minimumFractionDigits:2,maximumFractionDigits:2}).format(v):'—';
+const num=v=>{const x=Number(v);return Number.isFinite(x)?x:0};
+function productName(code){return products.find(x=>x[0]===code)?.[1]||code}
+function productUnit(code){return products.find(x=>x[0]===code)?.[2]||''}
 
-const money=v=>Number.isFinite(v)?new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v)+' ₺':'—';
-const n=v=>parseFloat(String(v??'').replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''));
-
-function render(data){
- const map=Object.fromEntries(data.map(x=>[x.code,x]));
- document.getElementById('prices').innerHTML=products.map(([code,name,unit])=>{
-   const x=map[code]||{};
-   return `<article class="card">
-   <div class="name">${name}</div><div class="unit">${unit}</div>
-   <div class="price">${money(n(x.satis))}</div>
-   <div class="row"><span>Alış</span><b>${money(n(x.alis))}</b></div>
-   <div class="row"><span>Satış</span><b>${money(n(x.satis))}</b></div>
-   </article>`;
- }).join('');
- const t=data.find(x=>x.tarih)?.tarih;
- document.getElementById('updated').textContent=t?'Son veri: '+t:'Son güncelleme: '+new Date().toLocaleTimeString('tr-TR');
- document.getElementById('status').textContent='CANLI';
- document.getElementById('status').classList.remove('error');
+function renderPrices(data){
+ priceMap=Object.fromEntries(data.map(x=>[x.code,x]));
+ document.getElementById('prices').innerHTML=products.map(([code,name,unit])=>{const x=priceMap[code]||{};return `<article class="card"><div class="name">${name}</div><div class="unit">${unit}</div><div class="price">${money(Number(x.satis))}</div><div class="row"><span>Alış</span><b>${money(Number(x.alis))}</b></div><div class="row"><span>Satış</span><b>${money(Number(x.satis))}</b></div></article>`}).join('');
+ const t=data.find(x=>x.tarih)?.tarih; document.getElementById('updated').textContent=t?'Son veri: '+new Date(t).toLocaleString('tr-TR'):'Son güncelleme: '+new Date().toLocaleTimeString('tr-TR'); document.getElementById('updated').classList.remove('error'); document.getElementById('status').textContent='CANLI'; document.getElementById('status').classList.remove('error'); renderPortfolio();
 }
+async function load(){try{const r=await fetch('/api/prices',{cache:'no-store'});const payload=await r.json();if(!r.ok)throw new Error(payload.error||'Sunucu fiyat verisi alamadı');const data=Array.isArray(payload)?payload:payload.data;if(!Array.isArray(data))throw new Error('Beklenmeyen veri formatı');renderPrices(data)}catch(e){document.getElementById('status').textContent='VERİ BEKLENİYOR';document.getElementById('status').classList.add('error');document.getElementById('updated').textContent='Fiyat servisine bağlanılamadı. Biraz sonra tekrar denenecek.';document.getElementById('updated').classList.add('error')}}
 
-async function load(){
- try{
-   const r=await fetch('/api/prices',{cache:'no-store'});
-   if(!r.ok) throw new Error('Sunucu fiyat verisi alamadı');
-   const data=await r.json();
-   if(!Array.isArray(data)) throw new Error('Beklenmeyen veri formatı');
-   render(data);
- }catch(e){
-   document.getElementById('status').textContent='VERİ BEKLENİYOR';
-   document.getElementById('status').classList.add('error');
-   document.getElementById('updated').textContent='Fiyat servisine bağlanılamadı. Yeniden deneniyor…';
-   document.getElementById('updated').classList.add('error');
- }
-}
-function login(){alert('Google veya e-posta girişini bir sonraki aşamada Supabase ile bağlayacağız.')}
-load(); setInterval(load,10000);
+function sessionKey(){return 'altinPortfolioSession'}
+function portfolioKey(){return currentUser?'altinPortfolio:'+currentUser.email.toLowerCase():''}
+function restoreSession(){try{currentUser=JSON.parse(localStorage.getItem(sessionKey())||'null')}catch{currentUser=null} updateAuthUI()}
+function openLogin(){document.getElementById('loginModal').classList.remove('hidden')}
+function closeLogin(){document.getElementById('loginModal').classList.add('hidden')}
+function login(){const name=document.getElementById('loginName').value.trim();const email=document.getElementById('loginEmail').value.trim().toLowerCase();if(!name||!/^\S+@\S+\.\S+$/.test(email)){alert('Lütfen adını ve geçerli bir e-posta adresi gir.');return}currentUser={name,email};localStorage.setItem(sessionKey(),JSON.stringify(currentUser));closeLogin();updateAuthUI()}
+function logout(){currentUser=null;localStorage.removeItem(sessionKey());updateAuthUI()}
+function updateAuthUI(){const logged=!!currentUser;document.getElementById('loginBtn').classList.toggle('hidden',logged);document.getElementById('logoutBtn').classList.toggle('hidden',!logged);document.getElementById('userChip').classList.toggle('hidden',!logged);document.getElementById('addAssetBtn').classList.toggle('hidden',!logged);document.getElementById('loginHint').classList.toggle('hidden',logged);document.getElementById('portfolioArea').classList.toggle('hidden',!logged);if(logged)document.getElementById('userChip').textContent=currentUser.name;renderPortfolio()}
+function getPortfolio(){if(!currentUser)return[];try{return JSON.parse(localStorage.getItem(portfolioKey())||'[]')}catch{return[]}}
+function setPortfolio(items){localStorage.setItem(portfolioKey(),JSON.stringify(items));renderPortfolio()}
+function openAsset(){const s=document.getElementById('assetCode');s.innerHTML=products.map(([c,n,u])=>`<option value="${c}">${n} (${u})</option>`).join('');document.getElementById('assetQty').value='';document.getElementById('assetCost').value='';document.getElementById('assetModal').classList.remove('hidden')}
+function closeAsset(){document.getElementById('assetModal').classList.add('hidden')}
+function saveAsset(){const code=document.getElementById('assetCode').value,qty=num(document.getElementById('assetQty').value),cost=num(document.getElementById('assetCost').value);if(qty<=0||cost<0){alert('Miktar 0’dan büyük olmalı.');return}const items=getPortfolio();const existing=items.find(x=>x.code===code);if(existing){existing.cost=num(existing.cost)+cost;existing.qty=num(existing.qty)+qty}else items.push({code,qty,cost});setPortfolio(items);closeAsset()}
+function removeAsset(code){if(confirm(productName(code)+' kaydını portföyden kaldırmak istiyor musun?'))setPortfolio(getPortfolio().filter(x=>x.code!==code))}
+function renderPortfolio(){if(!currentUser)return;const items=getPortfolio();const tbody=document.getElementById('portfolioRows'),empty=document.getElementById('emptyPortfolio');if(!items.length){tbody.innerHTML='';empty.classList.remove('hidden');document.getElementById('portfolioValue').textContent=money(0);document.getElementById('portfolioCost').textContent=money(0);document.getElementById('portfolioPnl').textContent=money(0);return}empty.classList.add('hidden');let totalValue=0,totalCost=0;tbody.innerHTML=items.map(item=>{const px=Number(priceMap[item.code]?.alis);const value=Number.isFinite(px)?px*num(item.qty):NaN;const pnl=Number.isFinite(value)?value-num(item.cost):NaN;if(Number.isFinite(value))totalValue+=value;totalCost+=num(item.cost);return `<tr><td><b>${productName(item.code)}</b><br><small>${productUnit(item.code)}</small></td><td>${new Intl.NumberFormat('tr-TR',{maximumFractionDigits:2}).format(item.qty)}</td><td>${money(px)}</td><td><b>${money(value)}</b></td><td>${money(num(item.cost))}</td><td class="${Number.isFinite(pnl)&&pnl>=0?'positive':'negative'}"><b>${money(pnl)}</b></td><td><button class="btn btn-danger" onclick="removeAsset('${item.code}')">Sil</button></td></tr>`}).join('');const totalPnl=totalValue-totalCost;document.getElementById('portfolioValue').textContent=money(totalValue);document.getElementById('portfolioCost').textContent=money(totalCost);const pnlEl=document.getElementById('portfolioPnl');pnlEl.textContent=money(totalPnl);pnlEl.className=totalPnl>=0?'positive':'negative'}
+restoreSession();load();setInterval(load,30000);
 </script>
 </body></html>
