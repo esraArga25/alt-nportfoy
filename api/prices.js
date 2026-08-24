@@ -1,638 +1,250 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+export default async function handler(req, res) {
+  const url = "https://canlialtinfiyatlari.com/kuyumcu.html";
 
-  <title>Altın Portföy</title>
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "text/html"
+      },
+      cache: "no-store"
+    });
 
-  <style>
-    * {
-      box-sizing: border-box;
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
     }
 
-    body {
-      margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background: #f7f5f0;
-      color: #111;
+    const html = await response.text();
+
+    /*
+     * Kuyumcu tablosunu bul.
+     * KUYUMCU SERBEST PİYASA başlamadan önceki
+     * tabloyu kullanıyoruz.
+     */
+
+    const start =
+      html.indexOf("KUYUMCU KUYUMCU");
+
+    const end =
+      html.indexOf("KUYUMCU SERBEST PİYASA");
+
+    if (start === -1) {
+      throw new Error("Kuyumcu tablosu bulunamadı.");
     }
 
-    .container {
-      width: min(1140px, calc(100% - 40px));
-      margin: 0 auto;
-    }
+    const tableHtml =
+      end > start
+        ? html.substring(start, end)
+        : html.substring(start);
 
-    header {
-      padding: 26px 0 30px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
+    /*
+     * Satırları bul.
+     */
 
-    .logo {
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
-      background: #c99b32;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 21px;
-      font-weight: bold;
-    }
+    const rows =
+      tableHtml.match(
+        /<tr[\s\S]*?<\/tr>/gi
+      ) || [];
 
-    .brand h1 {
-      margin: 0;
-      font-size: 24px;
-    }
 
-    .brand p {
-      margin: 4px 0 0;
-      color: #777;
-      font-size: 13px;
-    }
+    const data = [];
 
-    button {
-      border: 0;
-      cursor: pointer;
-      font-weight: 700;
-    }
 
-    .login-btn {
-      background: #151515;
-      color: white;
-      padding: 11px 20px;
-      border-radius: 12px;
-    }
+    for (const row of rows) {
 
-    .status {
-      background: white;
-      border: 1px solid #e6dfd2;
-      border-radius: 20px;
-      padding: 28px 26px;
-      margin-bottom: 26px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
+      /*
+       * Hücreleri bul.
+       */
 
-    .status h2 {
-      margin: 0 0 7px;
-      font-size: 18px;
-    }
+      const cells =
+        row.match(
+          /<td[\s\S]*?<\/td>/gi
+        ) || [];
 
-    .updated {
-      color: #777;
-      font-size: 13px;
-    }
-
-    .live {
-      color: #238b45;
-      font-weight: 700;
-      font-size: 13px;
-    }
-
-    .live::before {
-      content: "";
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      background: #2ca65a;
-      border-radius: 50%;
-      margin-right: 7px;
-    }
-
-    .offline {
-      color: #b43b32;
-    }
-
-    .prices {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-    }
-
-    .card {
-      background: white;
-      border: 1px solid #e6dfd2;
-      border-radius: 18px;
-      padding: 22px 20px;
-      min-height: 190px;
-    }
-
-    .card h3 {
-      margin: 0 0 5px;
-      font-size: 16px;
-    }
-
-    .unit {
-      color: #888;
-      font-size: 13px;
-    }
-
-    .main-price {
-      font-size: 28px;
-      font-weight: 800;
-      margin: 25px 0 18px;
-    }
-
-    .row {
-      border-top: 1px solid #eee9e0;
-      padding: 9px 0;
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-    }
-
-    .row span:first-child {
-      color: #777;
-    }
-
-    .portfolio-section {
-      margin-top: 40px;
-      padding-bottom: 60px;
-    }
-
-    .portfolio-section h2 {
-      font-size: 18px;
-      margin-bottom: 14px;
-    }
-
-    .login-message {
-      background: #f5ead1;
-      border: 1px solid #ead7b1;
-      border-radius: 16px;
-      padding: 18px;
-      color: #725a27;
-      font-size: 14px;
-    }
-
-    .error {
-      background: #fff0ee;
-      border: 1px solid #ecc5c0;
-      color: #9d332b;
-      padding: 14px 18px;
-      border-radius: 14px;
-      margin-bottom: 20px;
-      display: none;
-    }
-
-    @media (max-width: 800px) {
-      .prices {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-
-    @media (max-width: 550px) {
-      .container {
-        width: min(100% - 24px, 1140px);
-      }
-
-      header {
-        padding-top: 18px;
-      }
-
-      .brand h1 {
-        font-size: 20px;
-      }
-
-      .prices {
-        grid-template-columns: 1fr;
-      }
-
-      .status {
-        padding: 22px 18px;
-      }
-
-      .main-price {
-        font-size: 26px;
-      }
-    }
-  </style>
-</head>
-
-<body>
-
-  <div class="container">
-
-    <header>
-      <div class="brand">
-        <div class="logo">₺</div>
-
-        <div>
-          <h1>Altın Portföy</h1>
-          <p>Canlı fiyatlar ve kişisel portföy takibi</p>
-        </div>
-      </div>
-
-      <button
-        class="login-btn"
-        onclick="login()">
-        Giriş Yap
-      </button>
-    </header>
-
-
-    <section class="status">
-
-      <div>
-        <h2>Canlı Altın Fiyatları</h2>
-
-        <div
-          id="updated"
-          class="updated">
-          Fiyatlar yükleniyor...
-        </div>
-      </div>
-
-      <div
-        id="status"
-        class="live">
-        CANLI
-      </div>
-
-    </section>
-
-
-    <div
-      id="error"
-      class="error">
-    </div>
-
-
-    <section
-      id="prices"
-      class="prices">
-
-      <!-- JavaScript dolduracak -->
-
-    </section>
-
-
-    <section class="portfolio-section">
-
-      <h2>Portföyüm</h2>
-
-      <div class="login-message">
-
-        <strong>Portföyünü görmek için giriş yap.</strong>
-
-        <br>
-
-        Google veya e-posta ile giriş yaptıktan sonra
-        elindeki altınların adet/gram miktarını kaydedebilir
-        ve toplam portföy değerini canlı takip edebilirsin.
-
-      </div>
-
-    </section>
-
-  </div>
-
-
-<script>
-
-  /*
-   * SİTEDE GÖSTERİLECEK ÜRÜNLER
-   *
-   * API ile birebir aynı code değerleri kullanılıyor.
-   */
-
-  const PRODUCTS = [
-
-    {
-      code: "ALTIN",
-      name: "24 Ayar Gram Altın",
-      unit: "Gram"
-    },
-
-    {
-      code: "22AYAR",
-      name: "22 Ayar Altın",
-      unit: "Gram"
-    },
-
-    {
-      code: "BILEZIK22",
-      name: "22 Ayar Bilezik Gram Fiyatı",
-      unit: "Gram"
-    },
-
-    {
-      code: "CEYREK",
-      name: "Çeyrek Altın",
-      unit: "Adet"
-    },
-
-    {
-      code: "YARIM",
-      name: "Yarım Altın",
-      unit: "Adet"
-    },
-
-    {
-      code: "TAM",
-      name: "Tam Altın",
-      unit: "Adet"
-    },
-
-    {
-      code: "ATA",
-      name: "Ata Altın",
-      unit: "Adet"
-    },
-
-    {
-      code: "CUMHURIYET",
-      name: "Cumhuriyet Altını",
-      unit: "Adet"
-    }
-
-  ];
-
-
-  /*
-   * TL FORMAT
-   */
-
-  function formatTL(value) {
-
-    if (
-      value === null ||
-      value === undefined ||
-      !Number.isFinite(Number(value))
-    ) {
-      return "—";
-    }
-
-    return new Intl.NumberFormat(
-      "tr-TR",
-      {
-        style: "currency",
-        currency: "TRY",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      }
-    ).format(Number(value));
-
-  }
-
-
-  /*
-   * FİYAT KARTI
-   */
-
-  function createCard(product, item) {
-
-    const alis =
-      item && item.alis !== null
-        ? Number(item.alis)
-        : null;
-
-    const satis =
-      item && item.satis !== null
-        ? Number(item.satis)
-        : null;
-
-
-    return `
-
-      <div class="card">
-
-        <h3>
-          ${product.name}
-        </h3>
-
-        <div class="unit">
-          ${product.unit}
-        </div>
-
-
-        <div class="main-price">
-          ${formatTL(satis)}
-        </div>
-
-
-        <div class="row">
-          <span>Alış</span>
-          <strong>
-            ${formatTL(alis)}
-          </strong>
-        </div>
-
-
-        <div class="row">
-          <span>Satış</span>
-          <strong>
-            ${formatTL(satis)}
-          </strong>
-        </div>
-
-      </div>
-
-    `;
-
-  }
-
-
-  /*
-   * FİYATLARI YÜKLE
-   */
-
-  async function loadPrices() {
-
-    const errorBox =
-      document.getElementById("error");
-
-    const status =
-      document.getElementById("status");
-
-    try {
-
-      errorBox.style.display = "none";
-
-      const response =
-        await fetch(
-          "/api/prices?t=" +
-          Date.now(),
-          {
-            cache: "no-store"
-          }
-        );
-
-
-      const result =
-        await response.json();
-
-
-      if (!response.ok) {
-
-        throw new Error(
-          result.error ||
-          "Fiyatlar alınamadı."
-        );
-
+      if (cells.length < 2) {
+        continue;
       }
 
 
       /*
-       * API:
+       * HTML etiketlerini temizle.
+       */
+
+      const values =
+        cells.map(cell =>
+          cell
+            .replace(
+              /<script[\s\S]*?<\/script>/gi,
+              ""
+            )
+            .replace(
+              /<style[\s\S]*?<\/style>/gi,
+              ""
+            )
+            .replace(
+              /<[^>]+>/g,
+              " "
+            )
+            .replace(
+              /&nbsp;/gi,
+              " "
+            )
+            .replace(
+              /&amp;/gi,
+              "&"
+            )
+            .replace(
+              /\s+/g,
+              " "
+            )
+            .trim()
+        );
+
+
+      const name = values[0];
+
+      if (!name) {
+        continue;
+      }
+
+
+      /*
+       * Ürün satırının fiyatlarını hücrelerden al.
        *
-       * {
-       *   source,
-       *   updated_at,
-       *   data: [...]
-       * }
+       * Saat bilgisini dikkate almıyoruz.
        */
 
-      const data =
-        Array.isArray(result.data)
-          ? result.data
-          : [];
+      const numbers = [];
 
+      for (let i = 1; i < values.length; i++) {
 
-      /*
-       * API verisini MAP yapıyoruz.
-       */
+        const text = values[i];
 
-      const priceMap =
-        new Map();
+        /*
+         * Saatleri temizle:
+         * 15:40:34
+         */
 
-      data.forEach(item => {
-
-        if (item && item.code) {
-
-          priceMap.set(
-            String(item.code).toUpperCase(),
-            item
+        const cleaned =
+          text.replace(
+            /\b\d{1,2}:\d{2}:\d{2}\b/g,
+            ""
           );
 
-        }
 
-      });
+        /*
+         * Yüzde bilgisini temizle.
+         */
+
+        const withoutPercent =
+          cleaned.replace(
+            /[-+]?\d+(?:[.,]\d+)?\s*%/g,
+            ""
+          );
 
 
-      /*
-       * KARTLARI OLUŞTUR
-       */
+        /*
+         * Sayıları bul.
+         */
 
-      const html =
-        PRODUCTS
-          .map(product => {
+        const matches =
+          withoutPercent.match(
+            /\d+(?:[.,]\d+)?/g
+          ) || [];
 
-            const item =
-              priceMap.get(
-                product.code
-              );
 
-            return createCard(
-              product,
-              item
+        for (const value of matches) {
+
+          const number =
+            Number(
+              value
+                .replace(/\./g, "")
+                .replace(",", ".")
             );
 
-          })
-          .join("");
-
-
-      document.getElementById(
-        "prices"
-      ).innerHTML = html;
+          if (
+            Number.isFinite(number)
+          ) {
+            numbers.push(number);
+          }
+        }
+      }
 
 
       /*
-       * GÜNCELLEME ZAMANI
+       * En az alış + satış olmalı.
        */
 
-      const date =
-        result.updated_at
-          ? new Date(result.updated_at)
-          : new Date();
+      if (numbers.length < 2) {
+        continue;
+      }
 
 
-      document.getElementById(
-        "updated"
-      ).textContent =
-        "Son güncelleme: " +
-        date.toLocaleTimeString(
-          "tr-TR",
-          {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit"
-          }
-        );
+      /*
+       * Kaynaktaki ismi aynen koruyoruz.
+       */
 
+      data.push({
+        code:
+          "SOURCE_" +
+          data.length,
 
-      status.textContent =
-        "CANLI";
+        name: name,
 
-      status.className =
-        "live";
+        unit:
+          name.includes("gr") ||
+          name.includes("GRAM") ||
+          name.includes("AYAR")
+            ? "Gram"
+            : "Adet",
 
+        alis: numbers[0],
 
-    } catch (error) {
+        satis: numbers[1],
 
-      console.error(error);
-
-      status.textContent =
-        "BAĞLANTI HATASI";
-
-      status.className =
-        "live offline";
-
-
-      errorBox.textContent =
-        "Fiyatlar alınamadı: " +
-        error.message;
-
-      errorBox.style.display =
-        "block";
-
+        tarih:
+          new Date().toISOString()
+      });
     }
 
-  }
+
+    if (!data.length) {
+      throw new Error(
+        "Kuyumcu fiyatları okunamadı."
+      );
+    }
 
 
-  /*
-   * GİRİŞ
-   *
-   * Şimdilik mevcut giriş ekranına yönlendirme.
-   */
-
-  function login() {
-
-    alert(
-      "Google / e-posta giriş sistemi sonraki adımda bağlanacak."
+    res.setHeader(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate"
     );
 
+
+    return res.status(200).json({
+
+      source:
+        "Canlı Altın - Kuyumcu",
+
+      updated_at:
+        new Date().toISOString(),
+
+      data: data
+
+    });
+
+
+  } catch (error) {
+
+    return res.status(502).json({
+
+      error:
+        "Canlı Altın kuyumcu verileri alınamadı.",
+
+      details:
+        error.message
+
+    });
   }
-
-
-  /*
-   * İLK YÜKLEME
-   */
-
-  loadPrices();
-
-
-  /*
-   * HER 30 SANİYEDE BİR GÜNCELLE
-   */
-
-  setInterval(
-    loadPrices,
-    30000
-  );
-
-</script>
-
-</body>
-</html>
+}
