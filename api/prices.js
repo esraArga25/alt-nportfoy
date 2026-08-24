@@ -1,11 +1,11 @@
 export default async function handler(req, res) {
-  const url = "https://turkpidya.com/wp-json/turkpidya-data/v1/gold";
+  const url = "https://canlialtinfiyatlari.com/kuyumcu.html";
 
   try {
     const response = await fetch(url, {
       headers: {
-        Accept: "application/json",
-        "User-Agent": "AltinPortfoy/4.0"
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "text/html"
       },
       cache: "no-store"
     });
@@ -14,54 +14,79 @@ export default async function handler(req, res) {
       throw new Error(`HTTP ${response.status}`);
     }
 
-    const payload = await response.json();
+    const html = await response.text();
 
-    if (!payload || !Array.isArray(payload.prices)) {
-      throw new Error("Beklenmeyen API cevabı");
+    const products = [];
+
+    function getPrice(label) {
+      const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+      const regex = new RegExp(
+        escaped +
+        "[\\s\\S]{0,500}?" +
+        "(\\d+(?:\\.\\d+)?)\\s*" +
+        "(\\d+(?:\\.\\d+)?)"
+      );
+
+      const match = html.match(regex);
+
+      if (!match) return null;
+
+      return {
+        alis: Number(match[1]),
+        satis: Number(match[2])
+      };
     }
 
-    const codeMap = {
-      gram_24k: "ALTIN",
-      gram_22k: "22AYAR",
-      ceyrek: "CEYREK_YENI",
-      yarim: "YARIM_YENI",
-      tam: "TAM_YENI",
-      ata: "ATA_YENI",
-      cumhuriyet: "CUMHURIYET",
-      gremse: "GREMSE_YENI"
-    };
+    const definitions = [
+      {
+        code: "ALTIN",
+        name: "24 Ayar Gram Altın",
+        label: "GRAM ALTIN"
+      },
+      {
+        code: "22AYAR",
+        name: "22 Ayar Gram Altın",
+        label: "22-AYAR gr"
+      },
+      {
+        code: "CEYREK_YENI",
+        name: "Çeyrek Altın",
+        label: "Kuyumcu Çeyrek Altın"
+      },
+      {
+        code: "YARIM_YENI",
+        name: "Yarım Altın",
+        label: "Yarım Altın"
+      },
+      {
+        code: "TAM_YENI",
+        name: "Tam Altın",
+        label: "Tam Altın"
+      },
+      {
+        code: "ATA_YENI",
+        name: "Ata Altın",
+        label: "Ata Altın"
+      }
+    ];
 
-    const names = {
-      ALTIN: "24 Ayar Gram Altın",
-      "22AYAR": "22 Ayar Gram Altın",
-      CEYREK_YENI: "Çeyrek Altın",
-      YARIM_YENI: "Yarım Altın",
-      TAM_YENI: "Tam Altın",
-      ATA_YENI: "Ata Altın",
-      CUMHURIYET: "Cumhuriyet Altını",
-      GREMSE_YENI: "Gremse Altın"
-    };
+    for (const item of definitions) {
+      const price = getPrice(item.label);
 
-    const data = payload.prices
-      .filter(item => codeMap[item.type])
-      .map(item => {
-        const code = codeMap[item.type];
+      if (price) {
+        products.push({
+          code: item.code,
+          name: item.name,
+          alis: price.alis,
+          satis: price.satis,
+          tarih: new Date().toISOString()
+        });
+      }
+    }
 
-        return {
-          code: code,
-          name: names[code],
-          alis: toNumber(item.buy),
-          satis: toNumber(item.sell),
-          degisim: toNumber(item.change_percent),
-          tarih:
-            payload.last_updated ||
-            payload.price_date ||
-            null
-        };
-      });
-
-    if (!data.length) {
-      throw new Error("Ürün verisi bulunamadı");
+    if (!products.length) {
+      throw new Error("Kuyumcu fiyatları okunamadı");
     }
 
     res.setHeader(
@@ -70,51 +95,15 @@ export default async function handler(req, res) {
     );
 
     return res.status(200).json({
-      source: "Turkpidya / Harem Altın",
+      source: "Canlı Altın - Kuyumcu",
       updated_at: new Date().toISOString(),
-      data: data
+      data: products
     });
 
   } catch (error) {
     return res.status(502).json({
-      error: "Fiyat kaynağına ulaşılamadı.",
+      error: "Canlı Altın fiyatları alınamadı.",
       details: error.message
     });
   }
-}
-
-function toNumber(value) {
-  if (
-    value === null ||
-    value === undefined ||
-    value === ""
-  ) {
-    return null;
-  }
-
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : null;
-  }
-
-  let text = String(value).trim();
-
-  // 6.270,87 → 6270.87
-  if (
-    text.includes(",") &&
-    text.includes(".")
-  ) {
-    text = text
-      .replace(/\./g, "")
-      .replace(",", ".");
-  } else if (text.includes(",")) {
-    text = text.replace(",", ".");
-  }
-
-  text = text.replace(/[^\d.-]/g, "");
-
-  const number = Number(text);
-
-  return Number.isFinite(number)
-    ? number
-    : null;
 }
