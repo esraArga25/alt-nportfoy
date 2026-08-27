@@ -105,7 +105,7 @@ export default async function handler(req, res) {
        * sadece ilk fiyatı alacak.
        */
       const satis =
-       const satis = parsePrice(values[2]) / 10;
+        parsePrice(values[2]);
 
       if (
         alis === null ||
