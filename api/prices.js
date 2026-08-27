@@ -17,223 +17,7 @@ export default async function handler(req, res) {
     const html = await response.text();
 
     /*
-     * =====================================================
-     * ÜRÜNLER
-     * =====================================================
-     */
-    const allowed = [
-      "GRAM ALTIN",
-      "Has Altın",
-      "14-AYAR gr",
-      "22-AYAR gr",
-      "Kuyumcu Çeyrek Altın",
-      "Yarım Altın",
-      "Tam Altın",
-      "Ata Altın",
-      "Beşli Ata",
-      "Çeyrek (Eski)",
-      "Yarım (Eski)",
-      "Tam (Eski)",
-      "ALTIN ONS"
-    ];
-
-    /*
-     * =====================================================
-     * HTML TEMİZLEME
-     * =====================================================
-     */
-    function clean(htmlText) {
-      return htmlText
-        .replace(/<script[\s\S]*?<\/script>/gi, "")
-        .replace(/<style[\s\S]*?<\/style>/gi, "")
-        .replace(/<[^>]+>/g, " ")
-        .replace(/&nbsp;/gi, " ")
-        .replace(/&amp;/gi, "&")
-        .replace(/&#39;/gi, "'")
-        .replace(/&quot;/gi, '"')
-        .replace(/&#x27;/gi, "'")
-        .replace(/\s+/g, " ")
-        .trim();
-    }
-
-    /*
-     * =====================================================
-     * ALIŞ FİYATI
-     * =====================================================
-     *
-     * Mevcut çalışan alış parser'ın aynısı.
-     */
-    function parsePrice(value) {
-      if (!value) {
-        return null;
-      }
-
-      let text = String(value)
-        .trim()
-        .replace(/\s/g, "");
-
-      const match = text.match(
-        /-?\d+(?:[.,]\d+)?/
-      );
-
-      if (!match) {
-        return null;
-      }
-
-      text = match[0];
-
-      /*
-       * 6.584,90
-       */
-      if (
-        text.includes(".") &&
-        text.includes(",")
-      ) {
-        text = text
-          .replace(/\./g, "")
-          .replace(",", ".");
-      }
-
-      /*
-       * 6584,90
-       */
-      else if (text.includes(",")) {
-        text = text.replace(",", ".");
-      }
-
-      /*
-       * 6584.90
-       * Burada değiştirmiyoruz.
-       */
-
-      const number = Number(text);
-
-      return Number.isFinite(number)
-        ? number
-        : null;
-    }
-
-    /*
-     * =====================================================
-     * SATIŞ FİYATI
-     * =====================================================
-     *
-     * Kaynakta satış hücresinde bazı ürünlerde:
-     *
-     * 11607.00
-     * 23208.00
-     * 46245.00
-     * 47026.00
-     *
-     * gibi değerler geliyor.
-     *
-     * Bunların:
-     *
-     * 11607
-     * 23208
-     * 46245
-     * 47026
-     *
-     * olması gerekiyor.
-     *
-     * Ayrıca:
-     *
-     * 11.607,00
-     *
-     * formatını da destekliyor.
-     */
-    function parseSalePrice(value) {
-      if (!value) {
-        return null;
-      }
-
-      let text = String(value)
-        .trim()
-        .replace(/\s/g, "");
-
-      /*
-       * Yüzde bilgisinden ÖNCEKİ fiyatı al.
-       *
-       * Örnek:
-       *
-       * 11607.00-0.21%
-       *
-       * -> 11607.00
-       */
-      const match = text.match(
-        /^\d+(?:[.,]\d+)*/
-      );
-
-      if (!match) {
-        return null;
-      }
-
-      text = match[0];
-
-      /*
-       * 11.607,00
-       *
-       * -> 11607.00
-       */
-      if (
-        text.includes(".") &&
-        text.includes(",")
-      ) {
-        text = text
-          .replace(/\./g, "")
-          .replace(",", ".");
-      }
-
-      /*
-       * 11607,00
-       *
-       * -> 11607.00
-       */
-      else if (text.includes(",")) {
-        text = text.replace(",", ".");
-      }
-
-      /*
-       * 11607.00
-       *
-       * -> 11607
-       *
-       * Buradaki .00 kuruş bilgisidir.
-       */
-      else if (text.includes(".")) {
-        const parts = text.split(".");
-
-        if (
-          parts.length === 2 &&
-          parts[1].length === 2
-        ) {
-          text = parts[0];
-        }
-
-        /*
-         * 11.607
-         *
-         * -> 11607
-         */
-        else if (
-          parts.length === 2 &&
-          parts[1].length === 3
-        ) {
-          text = parts.join("");
-        }
-      }
-
-      const number = Number(text);
-
-      return Number.isFinite(number)
-        ? number
-        : null;
-    }
-
-    /*
-     * =====================================================
-     * TABLO SATIRLARI
-     * =====================================================
+     * Sayfadaki bütün tablo satırlarını alıyoruz.
      */
     const rows =
       html.match(/<tr\b[\s\S]*?<\/tr>/gi) || [];
@@ -246,26 +30,45 @@ export default async function handler(req, res) {
        * Hücreleri al.
        */
       const cells =
-        row.match(
-          /<t[dh]\b[\s\S]*?<\/t[dh]>/gi
-        ) || [];
+        row.match(/<t[dh]\b[\s\S]*?<\/t[dh]>/gi) || [];
 
       if (cells.length < 3) {
         continue;
       }
 
-      const values =
-        cells.map(clean);
+      /*
+       * Hücre içindeki HTML'i temizle.
+       */
+      function clean(htmlText) {
+        return htmlText
+          .replace(/<script[\s\S]*?<\/script>/gi, "")
+          .replace(/<style[\s\S]*?<\/style>/gi, "")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/&nbsp;/gi, " ")
+          .replace(/&amp;/gi, "&")
+          .replace(/&#39;/gi, "'")
+          .replace(/&quot;/gi, '"')
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      const values = cells.map(clean);
 
       /*
-       * İlk hücre:
+       * Gerçek kaynak yapısı:
        *
-       * Tam Altın 14:52:47
+       * [ "GRAM ALTIN 03:21:52", "7032.88", "7119.19 -0.36%" ]
        *
-       * saat kısmını kaldır.
+       * veya bazı sayfalarda:
+       *
+       * [ "GRAM ALTIN 03:21:52", "7032.88", "7119.19", "-0.36%" ]
        */
+
       const firstCell = values[0];
 
+      /*
+       * Ürün + saat ayrıştır.
+       */
       const nameMatch =
         firstCell.match(
           /^(.+?)\s+\d{1,2}:\d{2}:\d{2}$/
@@ -279,32 +82,62 @@ export default async function handler(req, res) {
         nameMatch[1].trim();
 
       /*
-       * Bizim ürün değilse geç.
+       * Başlık satırlarını ve diğer tabloları ele.
        */
-      if (!allowed.includes(name)) {
+      if (
+        name === "KUYUMCU KUYUMCU" ||
+        name === "ALIŞ" ||
+        name === "SATIŞ" ||
+        name.includes("SERBEST PİYASA")
+      ) {
         continue;
       }
 
       /*
-       * ===================================================
-       * ALIŞ
-       * ===================================================
+       * Alış fiyatı ikinci hücre.
        */
       const alis =
         parsePrice(values[1]);
 
       /*
-       * ===================================================
-       * SATIŞ
-       * ===================================================
+       * Satış fiyatı üçüncü hücre.
+       * Eğer yüzde de aynı hücredeyse parsePrice
+       * sadece ilk fiyatı alacak.
        */
       const satis =
-        parseSalePrice(values[2]);
+       const satis = parsePrice(values[2]) / 10;
 
       if (
         alis === null ||
         satis === null
       ) {
+        continue;
+      }
+
+      /*
+       * Sadece Kuyumcu tablosundaki ürünleri almak için
+       * bilinen ürünleri kontrol ediyoruz.
+       *
+       * Burada isimleri değiştirmiyoruz.
+       * Kaynaktaki isim aynen kullanılıyor.
+       */
+      const allowed = [
+        "GRAM ALTIN",
+        "Has Altın",
+        "14-AYAR gr",
+        "22-AYAR gr",
+        "Kuyumcu Çeyrek Altın",
+        "Yarım Altın",
+        "Tam Altın",
+        "Ata Altın",
+        "Beşli Ata",
+        "Çeyrek (Eski)",
+        "Yarım (Eski)",
+        "Tam (Eski)",
+        "ALTIN ONS"
+      ];
+
+      if (!allowed.includes(name)) {
         continue;
       }
 
@@ -326,9 +159,6 @@ export default async function handler(req, res) {
         unit = "Ons";
       }
 
-      /*
-       * Kaynaktaki isim aynen korunuyor.
-       */
       data.push({
         code: `SOURCE_${data.length + 1}`,
         name: name,
@@ -340,11 +170,10 @@ export default async function handler(req, res) {
     }
 
     /*
-     * =====================================================
-     * AYNI ÜRÜNÜ İKİ KEZ ALMA
-     * =====================================================
+     * Aynı ürünü iki kere alma.
      */
     const uniqueData = [];
+
     const seen = new Set();
 
     for (const item of data) {
@@ -362,31 +191,11 @@ export default async function handler(req, res) {
       );
     }
 
-    /*
-     * =====================================================
-     * CACHE KAPAT
-     * =====================================================
-     */
     res.setHeader(
       "Cache-Control",
       "no-store, no-cache, must-revalidate"
     );
 
-    res.setHeader(
-      "Pragma",
-      "no-cache"
-    );
-
-    res.setHeader(
-      "Expires",
-      "0"
-    );
-
-    /*
-     * =====================================================
-     * JSON
-     * =====================================================
-     */
     return res.status(200).json({
       source: "Canlı Altın - Kuyumcu",
       updated_at: new Date().toISOString(),
@@ -402,4 +211,79 @@ export default async function handler(req, res) {
       details: error.message
     });
   }
+}
+
+
+/*
+ * Kaynaktan gelen fiyatı doğru sayıya çevirir.
+ *
+ * 7032.88  -> 7032.88
+ * 7119.19  -> 7119.19
+ * 11484    -> 11484
+ * 6.584,90 -> 6584.90
+ */
+function parsePrice(value) {
+
+  if (!value) {
+    return null;
+  }
+
+  let text =
+    String(value)
+      .trim()
+      .replace(/\s/g, "");
+
+  /*
+   * İlk fiyatı al.
+   *
+   * Örneğin:
+   * "7119.19-0.36%"
+   *
+   * sadece:
+   * "7119.19"
+   */
+  const match =
+    text.match(
+      /-?\d+(?:[.,]\d+)?/
+    );
+
+  if (!match) {
+    return null;
+  }
+
+  text = match[0];
+
+  /*
+   * Türkçe:
+   * 6.584,90
+   */
+  if (
+    text.includes(".") &&
+    text.includes(",")
+  ) {
+    text =
+      text
+        .replace(/\./g, "")
+        .replace(",", ".");
+  }
+
+  /*
+   * 6584,90
+   */
+  else if (text.includes(",")) {
+    text =
+      text.replace(",", ".");
+  }
+
+  /*
+   * 6584.90
+   * Burada noktaya DOKUNMUYORUZ.
+   */
+
+  const number =
+    Number(text);
+
+  return Number.isFinite(number)
+    ? number
+    : null;
 }
